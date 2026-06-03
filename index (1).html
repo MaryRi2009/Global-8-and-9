@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HypothesisLab — Interactive Statistical Testing</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --surface3: #212636;
+    --border: #2a2f3e;
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --accent3: #f472b6;
+    --reject: #f87171;
+    --fail: #6ee7b7;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --muted2: #94a3b8;
+    --white: #ffffff;
+    --curve-fill: rgba(110,231,183,0.15);
+    --curve-stroke: #6ee7b7;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(160deg, #0d0f14 60%, #111827 100%);
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 60%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p {
+    margin-top: 0.5rem;
+    color: var(--muted2);
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem 2rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 0.55rem 1.8rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted2);
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0d0f14;
+    font-weight: 500;
+  }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 200px);
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    overflow-y: auto;
+  }
+  .sidebar-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── FORM GROUPS ── */
+  .form-group { margin-bottom: 1.4rem; }
+  .form-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted2);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+  .form-label span {
+    font-family: 'DM Mono', monospace;
+    color: var(--accent2);
+  }
+
+  /* ── SLIDER + INPUT ROW ── */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 6px rgba(110,231,183,0.4);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  .num-input {
+    width: 80px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .num-input:focus { border-color: var(--accent); }
+
+  /* ── SELECT ── */
+  select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  select:focus { border-color: var(--accent); }
+
+  /* ── MODE TOGGLE ── */
+  .mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--muted2);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn.active {
+    background: var(--surface3);
+    color: var(--accent);
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* ── CANVAS CARD ── */
+  .canvas-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+  .canvas-card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 6px;
+  }
+
+  /* ── RESULTS GRID ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+  }
+  .result-card .rc-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+  }
+  .result-card .rc-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* ── DECISION BANNER ── */
+  .decision-banner {
+    padding: 1.2rem 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+    background: rgba(110,231,183,0.06);
+    display: none;
+  }
+  .decision-banner.reject {
+    border-color: var(--reject);
+    background: rgba(248,113,113,0.06);
+  }
+  .decision-banner.show { display: block; }
+  .decision-banner .db-decision {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+  }
+  .decision-banner.reject .db-decision { color: var(--reject); }
+  .decision-banner:not(.reject) .db-decision { color: var(--fail); }
+  .decision-banner .db-conclusion {
+    font-size: 0.88rem;
+    color: var(--muted2);
+    line-height: 1.5;
+  }
+
+  /* ── ERRORS BOX ── */
+  .errors-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+  }
+  .errors-box h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 0.8rem;
+  }
+  .error-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.84rem;
+  }
+  .error-row .et { font-family: 'DM Mono', monospace; color: var(--accent3); min-width: 60px; }
+  .error-row .ed { color: var(--muted2); }
+
+  /* ── CSV PANEL ── */
+  .csv-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--surface);
+  }
+  .csv-upload-area:hover, .csv-upload-area.drag-over {
+    border-color: var(--accent);
+    background: rgba(110,231,183,0.04);
+  }
+  .csv-upload-area .upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.5;
+  }
+  .csv-upload-area p {
+    color: var(--muted2);
+    font-size: 0.88rem;
+  }
+  .csv-upload-area .hint {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  #csv-file-input { display: none; }
+
+  .csv-config {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: none;
+  }
+  .csv-config.show { display: block; }
+  .csv-config-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .csv-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 500px) { .csv-config-grid { grid-template-columns: 1fr; } }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+  }
+  .summary-table th {
+    text-align: left;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface2);
+    color: var(--muted2);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-table td {
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+
+  /* ── RUN BUTTON ── */
+  .run-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #0d0f14;
+    border: none;
+    border-radius: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    margin-top: 1rem;
+  }
+  .run-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .run-btn:active { transform: translateY(0); }
+
+  /* ── STATUS TAG ── */
+  .file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.3rem 0.7rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-top: 0.5rem;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 1.2rem 2rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── DATA TABLE PANEL ── */
+  .hyp-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+  .hyp-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 1rem;
+  }
+  .hyp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .hyp-grid { grid-template-columns: 1fr; } }
+  .hyp-field label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted2);
+    margin-bottom: 0.4rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+  .hyp-field input[type="text"],
+  .hyp-field textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+  .hyp-field input[type="text"]:focus,
+  .hyp-field textarea:focus { border-color: var(--accent2); }
+
+  .dt-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+  .dt-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .dt-table-header-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .dt-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .dt-btn {
+    padding: 0.35rem 0.9rem;
+    border-radius: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.18s;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted2);
+  }
+  .dt-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .dt-btn.accent3 { border-color: var(--accent3); color: var(--accent3); }
+  .dt-btn.accent3:hover { background: rgba(244,114,182,0.1); }
+
+  .dt-group-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+  .dt-group-label-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 5px;
+    outline: none;
+    width: 100%;
+    text-align: center;
+    font-weight: 500;
+    transition: border-color 0.2s;
+  }
+  .dt-group-label-input:focus { border-color: var(--accent); }
+
+  .dt-editable-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.84rem;
+  }
+  .dt-editable-table th {
+    padding: 0.5rem 0.6rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted2);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .dt-editable-table td {
+    padding: 0.25rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .dt-editable-table tr:last-child td { border-bottom: none; }
+  .dt-editable-table .cell-input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.84rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .dt-editable-table .cell-input:focus {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+  .dt-editable-table .row-num {
+    color: var(--muted);
+    font-size: 0.72rem;
+    width: 28px;
+    user-select: none;
+  }
+  .del-row-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    transition: color 0.15s;
+  }
+  .del-row-btn:hover { color: var(--reject); }
+
+  .dt-config-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.8rem;
+    align-items: end;
+  }
+  @media (max-width: 600px) { .dt-config-bar { grid-template-columns: 1fr 1fr; } }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+  }
+  .badge-prop { background: rgba(129,140,248,0.15); color: var(--accent2); border: 1px solid rgba(129,140,248,0.3); }
+  .badge-mean { background: rgba(244,114,182,0.15); color: var(--accent3); border: 1px solid rgba(244,114,182,0.3); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HypothesisLab</h1>
+  <p>Interactive Statistical Hypothesis Testing · Global Economics · G11 T3 L4</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('c8')">C8 — Manual Mode</button>
+  <button class="tab-btn" onclick="switchTab('c9')">C9 — CSV Mode</button>
+  <button class="tab-btn" onclick="switchTab('dt')">Data Table Mode</button>
+</div>
+
+<!-- ══════════════════════════════ C8 PANEL ══════════════════════════════ -->
+<div id="panel-c8" class="panel active">
+  <div class="layout">
+
+    <!-- SIDEBAR C8 -->
+    <aside class="sidebar">
+      <div class="sidebar-title">Test Configuration</div>
+
+      <!-- Stat mode toggle -->
+      <div class="form-group">
+        <div class="form-label">Statistic Type</div>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="btn-prop" onclick="setStatMode('proportion')">Proportion</button>
+          <button class="mode-btn" id="btn-mean" onclick="setStatMode('mean')">Mean</button>
+        </div>
+      </div>
+
+      <!-- Test direction -->
+      <div class="form-group">
+        <label class="form-label">Test Direction</label>
+        <select id="c8-tail" onchange="updateC8()">
+          <option value="two">Two-tailed (H₁: ≠)</option>
+          <option value="left">Left-tailed (H₁: &lt;)</option>
+          <option value="right">Right-tailed (H₁: &gt;)</option>
+        </select>
+      </div>
+
+      <!-- Alpha -->
+      <div class="form-group">
+        <label class="form-label">Significance level <span>α</span></label>
+        <div class="slider-row">
+          <input type="range" id="c8-alpha-sl" min="0.01" max="0.10" step="0.01" value="0.05" oninput="syncSI('c8-alpha-sl','c8-alpha-in');updateC8()">
+          <input type="number" class="num-input" id="c8-alpha-in" min="0.01" max="0.10" step="0.01" value="0.05" oninput="syncIS('c8-alpha-sl','c8-alpha-in');updateC8()">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- PROPORTION FIELDS -->
+      <div id="fields-proportion">
+        <div class="form-group">
+          <label class="form-label">Null proportion <span>p₀</span></label>
+          <div class="slider-row">
+            <input type="range" id="c8-p0-sl" min="0.01" max="0.99" step="0.01" value="0.50" oninput="syncSI('c8-p0-sl','c8-p0-in');updateC8()">
+            <input type="number" class="num-input" id="c8-p0-in" min="0.01" max="0.99" step="0.01" value="0.50" oninput="syncIS('c8-p0-sl','c8-p0-in');updateC8()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sample proportion <span>p̂</span></label>
+          <div class="slider-row">
+            <input type="range" id="c8-ph-sl" min="0.01" max="0.99" step="0.01" value="0.58" oninput="syncSI('c8-ph-sl','c8-ph-in');updateC8()">
+            <input type="number" class="num-input" id="c8-ph-in" min="0.01" max="0.99" step="0.01" value="0.58" oninput="syncIS('c8-ph-sl','c8-ph-in');updateC8()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sample size <span>n</span></label>
+          <div class="slider-row">
+            <input type="range" id="c8-n-sl" min="10" max="2000" step="1" value="100" oninput="syncSI('c8-n-sl','c8-n-in');updateC8()">
+            <input type="number" class="num-input" id="c8-n-in" min="10" max="2000" step="1" value="100" oninput="syncIS('c8-n-sl','c8-n-in');updateC8()">
+          </div>
+        </div>
+      </div>
+
+      <!-- MEAN FIELDS -->
+      <div id="fields-mean" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Null mean <span>μ₀</span></label>
+          <div class="slider-row">
+            <input type="range" id="c8-mu0-sl" min="-100" max="100" step="0.5" value="50" oninput="syncSI('c8-mu0-sl','c8-mu0-in');updateC8()">
+            <input type="number" class="num-input" id="c8-mu0-in" value="50" oninput="syncIS('c8-mu0-sl','c8-mu0-in');updateC8()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sample mean <span>x̄</span></label>
+          <div class="slider-row">
+            <input type="range" id="c8-xbar-sl" min="-100" max="100" step="0.5" value="54" oninput="syncSI('c8-xbar-sl','c8-xbar-in');updateC8()">
+            <input type="number" class="num-input" id="c8-xbar-in" value="54" oninput="syncIS('c8-xbar-sl','c8-xbar-in');updateC8()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Standard deviation / SE <span>σ or SE</span></label>
+          <div class="slider-row">
+            <input type="range" id="c8-sd-sl" min="0.5" max="50" step="0.5" value="10" oninput="syncSI('c8-sd-sl','c8-sd-in');updateC8()">
+            <input type="number" class="num-input" id="c8-sd-in" min="0.1" step="0.1" value="10" oninput="syncIS('c8-sd-sl','c8-sd-in');updateC8()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sample size <span>n</span></label>
+          <div class="slider-row">
+            <input type="range" id="c8-nm-sl" min="2" max="2000" step="1" value="30" oninput="syncSI('c8-nm-sl','c8-nm-in');updateC8()">
+            <input type="number" class="num-input" id="c8-nm-in" min="2" max="2000" step="1" value="30" oninput="syncIS('c8-nm-sl','c8-nm-in');updateC8()">
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN C8 -->
+    <main class="main-content">
+      <div class="canvas-card">
+        <div class="canvas-card-title">Normal distribution — p-value visualization</div>
+        <canvas id="c8-canvas" width="800" height="320"></canvas>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-card">
+          <div class="rc-label">Test Statistic z</div>
+          <div class="rc-value" id="r-zstat">—</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">p-value</div>
+          <div class="rc-value" id="r-pval">—</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">Critical value z*</div>
+          <div class="rc-value" id="r-crit">—</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">α (significance)</div>
+          <div class="rc-value" id="r-alpha">—</div>
+        </div>
+      </div>
+
+      <div id="c8-decision" class="decision-banner">
+        <div class="db-decision" id="c8-dec-text"></div>
+        <div class="db-conclusion" id="c8-conc-text"></div>
+      </div>
+
+      <div class="errors-box">
+        <h3>Types of Errors</h3>
+        <div class="error-row">
+          <span class="et">Type I (α)</span>
+          <span class="ed">Rejecting H₀ when it is actually true. Probability = α = <span id="err-alpha">0.05</span></span>
+        </div>
+        <div class="error-row">
+          <span class="et">Type II (β)</span>
+          <span class="ed">Failing to reject H₀ when it is actually false. Probability depends on effect size and sample size (β = 1 − power).</span>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ C9 PANEL ══════════════════════════════ -->
+<div id="panel-c9" class="panel">
+  <div class="layout">
+
+    <!-- SIDEBAR C9 -->
+    <aside class="sidebar">
+      <div class="sidebar-title">CSV Configuration</div>
+
+      <div id="c9-upload-area" class="csv-upload-area" onclick="document.getElementById('csv-file-input').click()" ondragover="dragOver(event)" ondrop="dropFile(event)" ondragleave="dragLeave(event)">
+        <div class="upload-icon">📂</div>
+        <p>Click or drag & drop a CSV file</p>
+        <p class="hint">Two-group data (mean or proportion)</p>
+      </div>
+      <input type="file" id="csv-file-input" accept=".csv" onchange="loadCSV(event)">
+      <div id="file-tag-area"></div>
+
+      <div id="c9-config" class="csv-config" style="margin-top:1rem">
+        <div class="csv-config-title">Column Mapping</div>
+        <div class="csv-config-grid">
+          <div class="form-group">
+            <label class="form-label">Group column</label>
+            <select id="c9-col-group" onchange="refreshC9Preview()"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Value column</label>
+            <select id="c9-col-value" onchange="refreshC9Preview()"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Benchmark group (H₀)</label>
+            <select id="c9-bench-group" onchange="refreshC9Preview()"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Test group (H₁ side)</label>
+            <select id="c9-test-group" onchange="refreshC9Preview()"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Test Direction</label>
+          <select id="c9-tail" onchange="refreshC9Preview()">
+            <option value="two">Two-tailed (H₁: ≠)</option>
+            <option value="left">Left-tailed (H₁: &lt;)</option>
+            <option value="right">Right-tailed (H₁: &gt;)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Significance level <span>α</span></label>
+          <div class="slider-row">
+            <input type="range" id="c9-alpha-sl" min="0.01" max="0.10" step="0.01" value="0.05" oninput="syncSI('c9-alpha-sl','c9-alpha-in');refreshC9Preview()">
+            <input type="number" class="num-input" id="c9-alpha-in" min="0.01" max="0.10" step="0.01" value="0.05" oninput="syncIS('c9-alpha-sl','c9-alpha-in');refreshC9Preview()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Data type</label>
+          <select id="c9-dtype" onchange="refreshC9Preview()">
+            <option value="mean">Numerical (mean-based z-test)</option>
+            <option value="proportion">Binary 0/1 (proportion z-test)</option>
+          </select>
+        </div>
+
+        <button class="run-btn" onclick="runC9()">▶ Run Hypothesis Test</button>
+      </div>
+    </aside>
+
+    <!-- MAIN C9 -->
+    <main class="main-content">
+      <!-- Summary stats -->
+      <div id="c9-summary-wrap" style="display:none">
+        <div class="canvas-card">
+          <div class="canvas-card-title">Summary Statistics</div>
+          <table class="summary-table" id="c9-summary-table">
+            <thead><tr><th>Group</th><th>n</th><th>Mean / Prop.</th><th>Std Dev</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="c9-curve-wrap" style="display:none">
+        <div class="canvas-card">
+          <div class="canvas-card-title">Normal distribution — p-value visualization</div>
+          <canvas id="c9-canvas" width="800" height="320"></canvas>
+        </div>
+      </div>
+
+      <div id="c9-results-grid" class="results-grid" style="display:none">
+        <div class="result-card">
+          <div class="rc-label">Test Statistic z</div>
+          <div class="rc-value" id="c9-r-zstat">—</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">p-value</div>
+          <div class="rc-value" id="c9-r-pval">—</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">Critical value z*</div>
+          <div class="rc-value" id="c9-r-crit">—</div>
+        </div>
+        <div class="result-card">
+          <div class="rc-label">Data type</div>
+          <div class="rc-value" id="c9-r-dtype">—</div>
+        </div>
+      </div>
+
+      <div id="c9-decision" class="decision-banner">
+        <div class="db-decision" id="c9-dec-text"></div>
+        <div class="db-conclusion" id="c9-conc-text"></div>
+      </div>
+
+      <!-- Placeholder when no file -->
+      <div id="c9-placeholder" style="text-align:center; padding:4rem 2rem; color:var(--muted)">
+        <div style="font-size:3rem; margin-bottom:1rem; opacity:0.3">📊</div>
+        <p style="font-family:'DM Mono',monospace; font-size:0.85rem; letter-spacing:0.06em">Upload a CSV file to begin analysis</p>
+        <p style="margin-top:0.5rem; font-size:0.8rem">Supports mean-based and proportion-based two-group data</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ DATA TABLE PANEL ══════════════════════════════ -->
+<div id="panel-dt" class="panel">
+  <div style="max-width:1100px; margin:0 auto; padding:2rem; display:flex; flex-direction:column; gap:1.5rem;">
+
+    <!-- HYPOTHESIS SECTION -->
+    <div class="hyp-section">
+      <div class="hyp-section-title">Hypothesis & Context</div>
+      <div class="hyp-grid">
+        <div class="hyp-field">
+          <label>Study title / context</label>
+          <input type="text" id="dt-title" placeholder="e.g. Comparison of exam scores between groups A and B" />
+        </div>
+        <div class="hyp-field">
+          <label>Research question</label>
+          <input type="text" id="dt-question" placeholder="e.g. Is the mean score of group B higher than group A?" />
+        </div>
+        <div class="hyp-field">
+          <label>Null hypothesis H₀</label>
+          <input type="text" id="dt-h0" placeholder="e.g. μ_B = μ_A  (no difference in means)" />
+        </div>
+        <div class="hyp-field">
+          <label>Alternative hypothesis H₁</label>
+          <input type="text" id="dt-h1" placeholder="e.g. μ_B > μ_A  (group B has higher mean)" />
+        </div>
+        <div class="hyp-field">
+          <label>Additional notes (optional)</label>
+          <textarea id="dt-notes" rows="2" placeholder="Context, units of measurement, sample description…"></textarea>
+        </div>
+        <div class="hyp-field">
+          <label>Expected conclusion (optional)</label>
+          <textarea id="dt-expected" rows="2" placeholder="What result do you expect and why?"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA TABLE SECTION -->
+    <div class="dt-table-wrap">
+      <div class="dt-table-header">
+        <span class="dt-table-header-title">Data Entry — Two Groups</span>
+        <div class="dt-actions">
+          <button class="dt-btn" onclick="dtAddRow()">+ Add row</button>
+          <button class="dt-btn" onclick="dtAddRows(5)">+ 5 rows</button>
+          <button class="dt-btn accent3" onclick="dtClearAll()">Clear all</button>
+          <button class="dt-btn" onclick="dtLoadExample('mean')">Load mean example</button>
+          <button class="dt-btn" onclick="dtLoadExample('proportion')">Load proportion example</button>
+        </div>
+      </div>
+
+      <!-- Group name labels -->
+      <div class="dt-group-labels">
+        <input type="text" class="dt-group-label-input" id="dt-label-a" value="Group A" oninput="dtUpdateHeaders()" placeholder="Group A name" />
+        <input type="text" class="dt-group-label-input" id="dt-label-b" value="Group B" oninput="dtUpdateHeaders()" placeholder="Group B name" />
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="dt-editable-table" id="dt-table">
+          <thead>
+            <tr>
+              <th class="row-num">#</th>
+              <th id="th-a">Group A</th>
+              <th id="th-b">Group B</th>
+              <th style="width:36px">×</th>
+            </tr>
+          </thead>
+          <tbody id="dt-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Config bar -->
+      <div style="margin-top:1.5rem;" class="dt-config-bar">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Data type</label>
+          <select id="dt-dtype">
+            <option value="mean">Numerical (mean z-test)</option>
+            <option value="proportion">Binary 0/1 (proportion z-test)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Test direction</label>
+          <select id="dt-tail">
+            <option value="two">Two-tailed (H₁: ≠)</option>
+            <option value="left">Left-tailed (H₁: &lt;)</option>
+            <option value="right">Right-tailed (H₁: &gt;)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Significance level α</label>
+          <div class="slider-row">
+            <input type="range" id="dt-alpha-sl" min="0.01" max="0.10" step="0.01" value="0.05" oninput="syncSI('dt-alpha-sl','dt-alpha-in')">
+            <input type="number" class="num-input" id="dt-alpha-in" min="0.01" max="0.10" step="0.01" value="0.05" oninput="syncIS('dt-alpha-sl','dt-alpha-in')">
+          </div>
+        </div>
+      </div>
+
+      <button class="run-btn" onclick="runDT()">▶ Run Hypothesis Test</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="dt-summary-wrap" style="display:none">
+      <div class="canvas-card">
+        <div class="canvas-card-title">Summary Statistics</div>
+        <table class="summary-table" id="dt-summary-table">
+          <thead><tr><th>Group</th><th>n</th><th>Mean / Prop.</th><th>Std Dev</th><th>SE</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="dt-curve-wrap" style="display:none">
+      <div class="canvas-card">
+        <div class="canvas-card-title">Normal distribution — p-value visualization</div>
+        <canvas id="dt-canvas" width="800" height="320"></canvas>
+      </div>
+    </div>
+
+    <div id="dt-results-grid" class="results-grid" style="display:none">
+      <div class="result-card">
+        <div class="rc-label">Test Statistic z</div>
+        <div class="rc-value" id="dt-r-zstat">—</div>
+      </div>
+      <div class="result-card">
+        <div class="rc-label">p-value</div>
+        <div class="rc-value" id="dt-r-pval">—</div>
+      </div>
+      <div class="result-card">
+        <div class="rc-label">Critical value z*</div>
+        <div class="rc-value" id="dt-r-crit">—</div>
+      </div>
+      <div class="result-card">
+        <div class="rc-label">α (significance)</div>
+        <div class="rc-value" id="dt-r-alpha">—</div>
+      </div>
+    </div>
+
+    <div id="dt-decision" class="decision-banner">
+      <div class="db-decision" id="dt-dec-text"></div>
+      <div class="db-conclusion" id="dt-conc-text"></div>
+    </div>
+
+    <!-- Hypothesis recap box (shown after run) -->
+    <div id="dt-hyp-recap" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.5rem;">
+      <div style="font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent2); margin-bottom:1rem;">Test Summary</div>
+      <div id="dt-recap-body" style="display:grid; gap:0.6rem; font-size:0.88rem; color:var(--muted2);"></div>
+    </div>
+
+    <div class="errors-box">
+      <h3>Types of Errors</h3>
+      <div class="error-row">
+        <span class="et">Type I (α)</span>
+        <span class="ed">Rejecting H₀ when it is actually true. Probability = α = <span id="dt-err-alpha">0.05</span></span>
+      </div>
+      <div class="error-row">
+        <span class="et">Type II (β)</span>
+        <span class="ed">Failing to reject H₀ when it is actually false. Probability = 1 − Power. Increases with smaller sample size or smaller effect size.</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>HypothesisLab · G11 T3 L4 C8–C10 · Global Economics · Deploy via GitHub Pages</footer>
+
+<script>
+/* ══════════════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════════════ */
+function syncSI(sliderId, inputId) {
+  document.getElementById(inputId).value = document.getElementById(sliderId).value;
+}
+function syncIS(sliderId, inputId) {
+  const v = parseFloat(document.getElementById(inputId).value);
+  if (!isNaN(v)) document.getElementById(sliderId).value = v;
+}
+function gv(id) { return parseFloat(document.getElementById(id).value); }
+
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════
+   STATISTICS
+══════════════════════════════════════════════════ */
+// Standard normal PDF
+function normalPDF(x) {
+  return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+}
+
+// CDF approximation (Abramowitz & Stegun)
+function normalCDF(x) {
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741,
+        a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x) / Math.sqrt(2);
+  const t = 1 / (1 + p * x);
+  const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return 0.5 * (1 + sign * y);
+}
+
+function pValue(z, tail) {
+  if (tail === 'two') return 2 * (1 - normalCDF(Math.abs(z)));
+  if (tail === 'left') return normalCDF(z);
+  return 1 - normalCDF(z);
+}
+
+function criticalZ(alpha, tail) {
+  if (tail === 'two') return invNorm(1 - alpha / 2);
+  if (tail === 'left') return -invNorm(1 - alpha);
+  return invNorm(1 - alpha);
+}
+
+// Inverse normal (bisection)
+function invNorm(p) {
+  let lo = -10, hi = 10;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    normalCDF(mid) < p ? lo = mid : hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function stddev(arr, mean) {
+  const n = arr.length;
+  return Math.sqrt(arr.reduce((s, x) => s + (x - mean) ** 2, 0) / (n - 1));
+}
+
+/* ══════════════════════════════════════════════════
+   CANVAS DRAWING
+══════════════════════════════════════════════════ */
+function drawCurve(canvasId, z, alpha, tail, pval) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const PAD = { top: 30, bottom: 60, left: 50, right: 50 };
+  const gW = W - PAD.left - PAD.right;
+  const gH = H - PAD.top - PAD.bottom;
+
+  const xMin = -4, xMax = 4;
+  const yMax = normalPDF(0) * 1.15;
+
+  function toPixX(x) { return PAD.left + ((x - xMin) / (xMax - xMin)) * gW; }
+  function toPixY(y) { return PAD.top + (1 - y / yMax) * gH; }
+
+  const steps = 400;
+  const dx = (xMax - xMin) / steps;
+
+  // ── Background curve fill (full) ──
+  ctx.beginPath();
+  ctx.moveTo(toPixX(xMin), toPixY(0));
+  for (let i = 0; i <= steps; i++) {
+    const xi = xMin + i * dx;
+    ctx.lineTo(toPixX(xi), toPixY(normalPDF(xi)));
+  }
+  ctx.lineTo(toPixX(xMax), toPixY(0));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  ctx.fill();
+
+  // ── Shade p-value region ──
+  function shadeRegion(from, to, color) {
+    ctx.beginPath();
+    ctx.moveTo(toPixX(from), toPixY(0));
+    for (let i = 0; i <= steps; i++) {
+      const xi = xMin + i * dx;
+      if (xi < from || xi > to) continue;
+      ctx.lineTo(toPixX(xi), toPixY(normalPDF(xi)));
+    }
+    ctx.lineTo(toPixX(to), toPixY(0));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  const pColor = 'rgba(248,113,113,0.35)';
+  if (tail === 'left') {
+    shadeRegion(xMin, Math.max(z, xMin), pColor);
+  } else if (tail === 'right') {
+    shadeRegion(Math.min(z, xMax), xMax, pColor);
+  } else {
+    const az = Math.abs(z);
+    shadeRegion(xMin, -az, pColor);
+    shadeRegion(az, xMax, pColor);
+  }
+
+  // ── Shade critical region (alpha, different color) ──
+  const zCrit = criticalZ(alpha, tail);
+  const cColor = 'rgba(129,140,248,0.12)';
+  if (tail === 'left') {
+    shadeRegion(xMin, zCrit, cColor);
+  } else if (tail === 'right') {
+    shadeRegion(zCrit, xMax, cColor);
+  } else {
+    shadeRegion(xMin, -Math.abs(zCrit), cColor);
+    shadeRegion(Math.abs(zCrit), xMax, cColor);
+  }
+
+  // ── Draw curve ──
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const xi = xMin + i * dx;
+    i === 0 ? ctx.moveTo(toPixX(xi), toPixY(normalPDF(xi)))
+             : ctx.lineTo(toPixX(xi), toPixY(normalPDF(xi)));
+  }
+  ctx.strokeStyle = '#6ee7b7';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // ── Critical value lines ──
+  function drawVertLine(xv, color, label) {
+    const px = toPixX(xv);
+    ctx.beginPath();
+    ctx.moveTo(px, PAD.top);
+    ctx.lineTo(px, PAD.top + gH);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color;
+    ctx.font = '11px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, px, PAD.top - 8);
+  }
+
+  if (tail === 'two') {
+    drawVertLine(-Math.abs(zCrit), '#818cf8', `z*=${(-Math.abs(zCrit)).toFixed(2)}`);
+    drawVertLine(Math.abs(zCrit), '#818cf8', `z*=${Math.abs(zCrit).toFixed(2)}`);
+  } else {
+    drawVertLine(zCrit, '#818cf8', `z*=${zCrit.toFixed(2)}`);
+  }
+
+  // ── Z observed ──
+  const clampedZ = Math.max(xMin + 0.1, Math.min(xMax - 0.1, z));
+  const px = toPixX(clampedZ);
+  ctx.beginPath();
+  ctx.moveTo(px, PAD.top);
+  ctx.lineTo(px, PAD.top + gH);
+  ctx.strokeStyle = '#f472b6';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.fillStyle = '#f472b6';
+  ctx.font = 'bold 11px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`z=${z.toFixed(3)}`, px, PAD.top - 8);
+
+  // ── X-axis labels ──
+  ctx.fillStyle = '#64748b';
+  ctx.font = '11px DM Mono, monospace';
+  for (let v = -4; v <= 4; v++) {
+    ctx.textAlign = 'center';
+    ctx.fillText(v, toPixX(v), PAD.top + gH + 18);
+  }
+
+  // ── Axis ──
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, PAD.top + gH);
+  ctx.lineTo(PAD.left + gW, PAD.top + gH);
+  ctx.strokeStyle = '#2a2f3e';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // ── Legend ──
+  const ly = PAD.top + gH + 40;
+  const items = [
+    { color: 'rgba(248,113,113,0.7)', label: `p-value = ${pval.toFixed(4)}` },
+    { color: 'rgba(129,140,248,0.5)', label: `α = ${alpha.toFixed(2)} (critical region)` },
+    { color: '#f472b6', label: `z_obs = ${z.toFixed(3)}` },
+  ];
+  let lx = PAD.left;
+  items.forEach(item => {
+    ctx.fillStyle = item.color;
+    ctx.fillRect(lx, ly - 9, 14, 10);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(item.label, lx + 18, ly);
+    lx += ctx.measureText(item.label).width + 40;
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   C8 LOGIC
+══════════════════════════════════════════════════ */
+let c8StatMode = 'proportion';
+
+function setStatMode(mode) {
+  c8StatMode = mode;
+  document.getElementById('fields-proportion').style.display = mode === 'proportion' ? '' : 'none';
+  document.getElementById('fields-mean').style.display = mode === 'mean' ? '' : 'none';
+  document.getElementById('btn-prop').classList.toggle('active', mode === 'proportion');
+  document.getElementById('btn-mean').classList.toggle('active', mode === 'mean');
+  updateC8();
+}
+
+function computeZ_c8() {
+  if (c8StatMode === 'proportion') {
+    const p0 = gv('c8-p0-in'), ph = gv('c8-ph-in'), n = gv('c8-n-in');
+    return (ph - p0) / Math.sqrt(p0 * (1 - p0) / n);
+  } else {
+    const mu0 = gv('c8-mu0-in'), xbar = gv('c8-xbar-in'), sd = gv('c8-sd-in'), n = gv('c8-nm-in');
+    return (xbar - mu0) / (sd / Math.sqrt(n));
+  }
+}
+
+function updateC8() {
+  const alpha = gv('c8-alpha-in');
+  const tail = document.getElementById('c8-tail').value;
+  const z = computeZ_c8();
+  const pval = pValue(z, tail);
+  const zcrit = criticalZ(alpha, tail);
+
+  document.getElementById('r-zstat').textContent = z.toFixed(4);
+  document.getElementById('r-pval').textContent = pval.toFixed(4);
+  document.getElementById('r-crit').textContent = tail === 'two' ? `±${Math.abs(zcrit).toFixed(4)}` : zcrit.toFixed(4);
+  document.getElementById('r-alpha').textContent = alpha.toFixed(2);
+  document.getElementById('err-alpha').textContent = alpha.toFixed(2);
+
+  const reject = pval < alpha;
+  const banner = document.getElementById('c8-decision');
+  banner.classList.add('show');
+  banner.classList.toggle('reject', reject);
+
+  const statLabel = c8StatMode === 'proportion' ? 'proportion' : 'mean';
+  document.getElementById('c8-dec-text').textContent = reject
+    ? '✗  Reject H₀'
+    : '✓  Fail to Reject H₀';
+
+  document.getElementById('c8-conc-text').textContent = reject
+    ? `The p-value (${pval.toFixed(4)}) is less than α (${alpha}). There is sufficient statistical evidence to reject the null hypothesis. The sample ${statLabel} differs significantly from the benchmark.`
+    : `The p-value (${pval.toFixed(4)}) is greater than or equal to α (${alpha}). There is not sufficient statistical evidence to reject the null hypothesis. The sample ${statLabel} is consistent with the benchmark.`;
+
+  drawCurve('c8-canvas', z, alpha, tail, pval);
+}
+
+/* ══════════════════════════════════════════════════
+   C9 LOGIC
+══════════════════════════════════════════════════ */
+let c9Data = null;
+
+function dragOver(e) { e.preventDefault(); document.getElementById('c9-upload-area').classList.add('drag-over'); }
+function dragLeave(e) { document.getElementById('c9-upload-area').classList.remove('drag-over'); }
+function dropFile(e) {
+  e.preventDefault();
+  dragLeave(e);
+  const file = e.dataTransfer.files[0];
+  if (file) processCSVFile(file);
+}
+
+function loadCSV(event) {
+  const file = event.target.files[0];
+  if (file) processCSVFile(file);
+}
+
+function processCSVFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    c9Data = parseCSV(text);
+    if (!c9Data || c9Data.length === 0) { alert('Could not parse CSV file.'); return; }
+
+    document.getElementById('file-tag-area').innerHTML =
+      `<div class="file-tag">📄 ${file.name} &nbsp;·&nbsp; ${c9Data.length} rows</div>`;
+
+    populateC9Selects();
+    document.getElementById('c9-config').classList.add('show');
+    document.getElementById('c9-placeholder').style.display = 'none';
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) return null;
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/"/g,''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(sep).map(v => v.trim().replace(/"/g,''));
+    const row = {};
+    headers.forEach((h, i) => row[h] = vals[i]);
+    return row;
+  });
+}
+
+function populateC9Selects() {
+  if (!c9Data || c9Data.length === 0) return;
+  const headers = Object.keys(c9Data[0]);
+  const selGroup = document.getElementById('c9-col-group');
+  const selVal = document.getElementById('c9-col-value');
+
+  selGroup.innerHTML = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+  selVal.innerHTML = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+
+  // Auto-detect: group col = first col with few unique values
+  let bestGroup = headers[0];
+  headers.forEach(h => {
+    const unique = [...new Set(c9Data.map(r => r[h]))];
+    if (unique.length >= 2 && unique.length <= 10) bestGroup = h;
+  });
+  selGroup.value = bestGroup;
+  // value col = last numeric-looking column
+  let bestVal = headers[headers.length - 1];
+  headers.forEach(h => {
+    if (h !== bestGroup && !isNaN(parseFloat(c9Data[0][h]))) bestVal = h;
+  });
+  selVal.value = bestVal;
+
+  refreshC9Preview();
+}
+
+function refreshC9Preview() {
+  if (!c9Data) return;
+  const gc = document.getElementById('c9-col-group').value;
+  const groups = [...new Set(c9Data.map(r => r[gc]))].filter(Boolean);
+
+  const bg = document.getElementById('c9-bench-group');
+  const tg = document.getElementById('c9-test-group');
+  bg.innerHTML = groups.map(g => `<option value="${g}">${g}</option>`).join('');
+  tg.innerHTML = groups.map(g => `<option value="${g}">${g}</option>`).join('');
+  if (groups.length >= 2) tg.value = groups[1];
+}
+
+function getGroupData(groupName, groupCol, valueCol) {
+  return c9Data
+    .filter(r => r[groupCol] === groupName)
+    .map(r => parseFloat(r[valueCol]))
+    .filter(v => !isNaN(v));
+}
+
+function runC9() {
+  if (!c9Data) return;
+  const gc = document.getElementById('c9-col-group').value;
+  const vc = document.getElementById('c9-col-value').value;
+  const bg = document.getElementById('c9-bench-group').value;
+  const tg = document.getElementById('c9-test-group').value;
+  const tail = document.getElementById('c9-tail').value;
+  const alpha = gv('c9-alpha-in');
+  const dtype = document.getElementById('c9-dtype').value;
+
+  const benchData = getGroupData(bg, gc, vc);
+  const testData = getGroupData(tg, gc, vc);
+
+  if (benchData.length < 2 || testData.length < 2) {
+    alert('Not enough data in one of the groups. Check column selection.'); return;
+  }
+
+  const n1 = benchData.length, n2 = testData.length;
+  const m1 = benchData.reduce((a, b) => a + b, 0) / n1;
+  const m2 = testData.reduce((a, b) => a + b, 0) / n2;
+
+  let z, sdLabel;
+
+  if (dtype === 'proportion') {
+    // Treat values as 0/1 binary
+    const p1 = m1, p2 = m2;
+    const pPool = (benchData.reduce((a,b)=>a+b,0) + testData.reduce((a,b)=>a+b,0)) / (n1 + n2);
+    const se = Math.sqrt(pPool * (1 - pPool) * (1/n1 + 1/n2));
+    z = (p2 - p1) / se;
+    sdLabel = '—';
+  } else {
+    const sd1 = stddev(benchData, m1);
+    const sd2 = stddev(testData, m2);
+    const se = Math.sqrt(sd1**2/n1 + sd2**2/n2);
+    z = (m2 - m1) / se;
+    sdLabel = sd1.toFixed(3);
+  }
+
+  const pval = pValue(z, tail);
+  const zcrit = criticalZ(alpha, tail);
+  const reject = pval < alpha;
+
+  // Summary table
+  const sd1 = dtype === 'mean' ? stddev(benchData, m1).toFixed(3) : '—';
+  const sd2 = dtype === 'mean' ? stddev(testData, m2).toFixed(3) : '—';
+  const tbody = document.querySelector('#c9-summary-table tbody');
+  tbody.innerHTML = `
+    <tr><td>${bg}</td><td>${n1}</td><td>${m1.toFixed(4)}</td><td>${sd1}</td></tr>
+    <tr><td>${tg}</td><td>${n2}</td><td>${m2.toFixed(4)}</td><td>${sd2}</td></tr>
+  `;
+
+  document.getElementById('c9-r-zstat').textContent = z.toFixed(4);
+  document.getElementById('c9-r-pval').textContent = pval.toFixed(4);
+  document.getElementById('c9-r-crit').textContent = tail === 'two' ? `±${Math.abs(zcrit).toFixed(4)}` : zcrit.toFixed(4);
+  document.getElementById('c9-r-dtype').textContent = dtype === 'proportion' ? 'Proportion' : 'Mean';
+
+  const banner = document.getElementById('c9-decision');
+  banner.classList.add('show');
+  banner.classList.toggle('reject', reject);
+  document.getElementById('c9-dec-text').textContent = reject ? '✗  Reject H₀' : '✓  Fail to Reject H₀';
+  const statWord = dtype === 'proportion' ? 'proportions' : 'means';
+  document.getElementById('c9-conc-text').textContent = reject
+    ? `The p-value (${pval.toFixed(4)}) < α (${alpha}). There is sufficient evidence to reject H₀. The ${statWord} of "${tg}" and "${bg}" differ significantly.`
+    : `The p-value (${pval.toFixed(4)}) ≥ α (${alpha}). There is not sufficient evidence to reject H₀. The ${statWord} of "${tg}" and "${bg}" are not significantly different.`;
+
+  document.getElementById('c9-summary-wrap').style.display = '';
+  document.getElementById('c9-curve-wrap').style.display = '';
+  document.getElementById('c9-results-grid').style.display = '';
+
+  drawCurve('c9-canvas', z, alpha, tail, pval);
+}
+
+/* ══════════════════════════════════════════════════
+   DATA TABLE LOGIC
+══════════════════════════════════════════════════ */
+let dtRowCount = 0;
+
+function dtUpdateHeaders() {
+  const la = document.getElementById('dt-label-a').value || 'Group A';
+  const lb = document.getElementById('dt-label-b').value || 'Group B';
+  document.getElementById('th-a').textContent = la;
+  document.getElementById('th-b').textContent = lb;
+}
+
+function dtAddRow(valA = '', valB = '') {
+  dtRowCount++;
+  const tbody = document.getElementById('dt-tbody');
+  const tr = document.createElement('tr');
+  tr.id = `dtr-${dtRowCount}`;
+  tr.innerHTML = `
+    <td class="row-num">${tbody.rows.length + 1}</td>
+    <td><input class="cell-input" type="number" step="any" placeholder="—" value="${valA}" /></td>
+    <td><input class="cell-input" type="number" step="any" placeholder="—" value="${valB}" /></td>
+    <td><button class="del-row-btn" onclick="dtDeleteRow('dtr-${dtRowCount}')" title="Delete row">×</button></td>
+  `;
+  tbody.appendChild(tr);
+  dtRenumber();
+}
+
+function dtAddRows(n) {
+  for (let i = 0; i < n; i++) dtAddRow();
+}
+
+function dtDeleteRow(id) {
+  const el = document.getElementById(id);
+  if (el) { el.remove(); dtRenumber(); }
+}
+
+function dtRenumber() {
+  const rows = document.querySelectorAll('#dt-tbody tr');
+  rows.forEach((r, i) => { const cell = r.querySelector('.row-num'); if (cell) cell.textContent = i + 1; });
+}
+
+function dtClearAll() {
+  document.getElementById('dt-tbody').innerHTML = '';
+  dtRowCount = 0;
+  ['dt-summary-wrap','dt-curve-wrap','dt-results-grid','dt-hyp-recap'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('dt-decision').classList.remove('show');
+}
+
+function dtLoadExample(type) {
+  dtClearAll();
+  if (type === 'mean') {
+    const groupA = [72,68,75,80,65,70,78,74,69,77,71,66,73,79,67];
+    const groupB = [81,85,79,88,76,83,90,84,77,86,82,78,87,80,89];
+    const maxLen = Math.max(groupA.length, groupB.length);
+    for (let i = 0; i < maxLen; i++) dtAddRow(groupA[i] ?? '', groupB[i] ?? '');
+    document.getElementById('dt-label-a').value = 'Control';
+    document.getElementById('dt-label-b').value = 'Treatment';
+    document.getElementById('dt-dtype').value = 'mean';
+    document.getElementById('dt-h0').value = 'μ_Treatment = μ_Control (no difference in mean scores)';
+    document.getElementById('dt-h1').value = 'μ_Treatment > μ_Control (treatment group scores higher)';
+    document.getElementById('dt-title').value = 'Effect of treatment on exam scores';
+    document.getElementById('dt-question').value = 'Does the treatment significantly increase mean exam scores?';
+    document.getElementById('dt-tail').value = 'right';
+  } else {
+    const groupA = [1,0,1,1,0,0,1,0,1,1,0,1,0,0,1,1,0,1,0,0];
+    const groupB = [1,1,0,1,1,1,0,1,1,1,1,0,1,1,0,1,1,1,0,1];
+    const maxLen = Math.max(groupA.length, groupB.length);
+    for (let i = 0; i < maxLen; i++) dtAddRow(groupA[i] ?? '', groupB[i] ?? '');
+    document.getElementById('dt-label-a').value = 'Method A';
+    document.getElementById('dt-label-b').value = 'Method B';
+    document.getElementById('dt-dtype').value = 'proportion';
+    document.getElementById('dt-h0').value = 'p_B = p_A (success rates are equal)';
+    document.getElementById('dt-h1').value = 'p_B ≠ p_A (success rates differ)';
+    document.getElementById('dt-title').value = 'Comparison of success rates between methods';
+    document.getElementById('dt-question').value = 'Is the success rate of Method B different from Method A?';
+    document.getElementById('dt-tail').value = 'two';
+  }
+  dtUpdateHeaders();
+}
+
+function dtGetColData(col) {
+  // col: 0 = Group A (first input), 1 = Group B (second input)
+  const rows = document.querySelectorAll('#dt-tbody tr');
+  const vals = [];
+  rows.forEach(r => {
+    const inputs = r.querySelectorAll('.cell-input');
+    if (inputs[col] && inputs[col].value.trim() !== '') {
+      const v = parseFloat(inputs[col].value);
+      if (!isNaN(v)) vals.push(v);
+    }
+  });
+  return vals;
+}
+
+function runDT() {
+  const dataA = dtGetColData(0);
+  const dataB = dtGetColData(1);
+
+  if (dataA.length < 2 || dataB.length < 2) {
+    alert('Each group needs at least 2 numeric values to run the test.'); return;
+  }
+
+  const tail   = document.getElementById('dt-tail').value;
+  const alpha  = gv('dt-alpha-in');
+  const dtype  = document.getElementById('dt-dtype').value;
+  const labelA = document.getElementById('dt-label-a').value || 'Group A';
+  const labelB = document.getElementById('dt-label-b').value || 'Group B';
+
+  const nA = dataA.length, nB = dataB.length;
+  const mA = dataA.reduce((a,b)=>a+b,0)/nA;
+  const mB = dataB.reduce((a,b)=>a+b,0)/nB;
+
+  let z, seA, seB;
+
+  if (dtype === 'proportion') {
+    const pPool = (dataA.reduce((a,b)=>a+b,0) + dataB.reduce((a,b)=>a+b,0)) / (nA + nB);
+    const se = Math.sqrt(pPool*(1-pPool)*(1/nA + 1/nB));
+    z = (mB - mA) / se;
+    seA = Math.sqrt(mA*(1-mA)/nA);
+    seB = Math.sqrt(mB*(1-mB)/nB);
+  } else {
+    const sdA = stddev(dataA, mA);
+    const sdB = stddev(dataB, mB);
+    const se  = Math.sqrt(sdA**2/nA + sdB**2/nB);
+    z = (mB - mA) / se;
+    seA = sdA / Math.sqrt(nA);
+    seB = sdB / Math.sqrt(nB);
+  }
+
+  const pval  = pValue(z, tail);
+  const zcrit = criticalZ(alpha, tail);
+  const reject = pval < alpha;
+
+  // Summary table
+  const sdA_str = dtype === 'mean' ? stddev(dataA, mA).toFixed(3) : '—';
+  const sdB_str = dtype === 'mean' ? stddev(dataB, mB).toFixed(3) : '—';
+  const tbody = document.querySelector('#dt-summary-table tbody');
+  tbody.innerHTML = `
+    <tr><td>${labelA}</td><td>${nA}</td><td>${mA.toFixed(4)}</td><td>${sdA_str}</td><td>${seA.toFixed(4)}</td></tr>
+    <tr><td>${labelB}</td><td>${nB}</td><td>${mB.toFixed(4)}</td><td>${sdB_str}</td><td>${seB.toFixed(4)}</td></tr>
+  `;
+
+  document.getElementById('dt-r-zstat').textContent = z.toFixed(4);
+  document.getElementById('dt-r-pval').textContent  = pval.toFixed(4);
+  document.getElementById('dt-r-crit').textContent  = tail === 'two' ? `±${Math.abs(zcrit).toFixed(4)}` : zcrit.toFixed(4);
+  document.getElementById('dt-r-alpha').textContent = alpha.toFixed(2);
+  document.getElementById('dt-err-alpha').textContent = alpha.toFixed(2);
+
+  const banner = document.getElementById('dt-decision');
+  banner.classList.add('show');
+  banner.classList.toggle('reject', reject);
+  document.getElementById('dt-dec-text').textContent = reject ? '✗  Reject H₀' : '✓  Fail to Reject H₀';
+  const statWord = dtype === 'proportion' ? 'proportions' : 'means';
+  document.getElementById('dt-conc-text').textContent = reject
+    ? `The p-value (${pval.toFixed(4)}) < α (${alpha.toFixed(2)}). There is sufficient statistical evidence to reject H₀. The ${statWord} of "${labelB}" and "${labelA}" differ significantly.`
+    : `The p-value (${pval.toFixed(4)}) ≥ α (${alpha.toFixed(2)}). There is not sufficient statistical evidence to reject H₀. The ${statWord} of "${labelB}" and "${labelA}" are not significantly different.`;
+
+  // Hypothesis recap
+  const titleText    = document.getElementById('dt-title').value;
+  const questionText = document.getElementById('dt-question').value;
+  const h0Text       = document.getElementById('dt-h0').value;
+  const h1Text       = document.getElementById('dt-h1').value;
+  const notesText    = document.getElementById('dt-notes').value;
+
+  const recapRows = [
+    titleText    ? `<div><span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:0.75rem;">STUDY:</span> ${titleText}</div>` : '',
+    questionText ? `<div><span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:0.75rem;">QUESTION:</span> ${questionText}</div>` : '',
+    h0Text       ? `<div><span style="color:var(--accent2);font-family:'DM Mono',monospace;font-size:0.75rem;">H₀:</span> ${h0Text}</div>` : '',
+    h1Text       ? `<div><span style="color:var(--accent3);font-family:'DM Mono',monospace;font-size:0.75rem;">H₁:</span> ${h1Text}</div>` : '',
+    `<div><span style="color:var(--muted2);font-family:'DM Mono',monospace;font-size:0.75rem;">DIRECTION:</span> ${tail}-tailed &nbsp;·&nbsp; α = ${alpha.toFixed(2)}</div>`,
+    `<div><span style="color:var(--muted2);font-family:'DM Mono',monospace;font-size:0.75rem;">DECISION:</span> ${reject ? '<span style="color:var(--reject)">Reject H₀</span>' : '<span style="color:var(--fail)">Fail to Reject H₀</span>'}</div>`,
+    notesText    ? `<div><span style="color:var(--muted2);font-family:'DM Mono',monospace;font-size:0.75rem;">NOTES:</span> ${notesText}</div>` : '',
+  ].filter(Boolean).join('');
+
+  document.getElementById('dt-recap-body').innerHTML = recapRows;
+
+  ['dt-summary-wrap','dt-curve-wrap','dt-results-grid','dt-hyp-recap'].forEach(id => {
+    document.getElementById(id).style.display = '';
+  });
+
+  // Resize and draw
+  const c = document.getElementById('dt-canvas');
+  const w = c.parentElement.clientWidth - 48;
+  c.width  = Math.max(400, w);
+  c.height = Math.round(c.width * 0.4);
+  drawCurve('dt-canvas', z, alpha, tail, pval);
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  // Resize canvases to actual display width
+  function resizeCanvas(id) {
+    const c = document.getElementById(id);
+    const w = c.parentElement.clientWidth - 48;
+    c.width = Math.max(400, w);
+    c.height = Math.round(c.width * 0.4);
+  }
+  resizeCanvas('c8-canvas');
+  resizeCanvas('c9-canvas');
+  updateC8();
+});
+window.addEventListener('resize', () => {
+  ['c8-canvas','c9-canvas'].forEach(id => {
+    const c = document.getElementById(id);
+    if (!c) return;
+    const w = c.parentElement.clientWidth - 48;
+    c.width = Math.max(400, w);
+    c.height = Math.round(c.width * 0.4);
+  });
+  updateC8();
+});
+</script>
+</body>
+</html>
